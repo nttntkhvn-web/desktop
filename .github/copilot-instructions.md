@@ -8,14 +8,28 @@ GitHub Desktop is an Electron-based desktop application written in TypeScript an
 - **Renderer Process**: React-based UI components (`app/src/ui/`)
 - **Shared Libraries**: Common utilities and models (`app/src/lib/`, `app/src/models/`)
 - **IPC Communication**: Typed channels defined in `app/src/lib/ipc-shared.ts` for secure main-renderer communication
+- **Build Replacements**: Runtime constants injected via `app/app-info.ts` (e.g., OAuth secrets, platform flags)
+
+## Project Structure
+- `app/src/main-process/`: Electron main process code
+- `app/src/ui/`: React UI components and views
+- `app/src/lib/`: Shared utilities, Git integration, IPC helpers
+- `app/src/models/`: Data models and interfaces
+- `app/src/cli/`: Command line interface
+- `script/`: Build, packaging, and utility scripts
+- `static/`: HTML templates, images, platform-specific assets
+- `styles/`: SCSS stylesheets and mixins
+- `test/`: Test files and fixtures
+- `docs/`: Documentation
+- `eslint-rules/`: Custom ESLint rules
 
 ## Development Workflow
 - **Setup**: `yarn` to install dependencies
 - **Build**: `yarn build:dev` for development, `yarn build:prod` for production
 - **Run**: `yarn start` launches the app with hot reload (Ctrl/Cmd+Alt+R to refresh)
 - **Main Process Changes**: Require `yarn build:dev` then `yarn start`
-- **Test**: `yarn test` (unit tests), `yarn test:script` (script tests)
-- **Lint**: `yarn lint` (includes Prettier formatting)
+- **Test**: `yarn test` (unit tests), `yarn test:script` (script tests), `yarn test:unit <file>` for specific file
+- **Lint**: `yarn lint` (includes Prettier formatting), `yarn lint:fix` to auto-fix
 - **Debug**: Toggle Developer Tools from View menu; React DevTools auto-installs in dev mode
 
 ## Key Patterns & Conventions
@@ -30,6 +44,7 @@ GitHub Desktop is an Electron-based desktop application written in TypeScript an
 - **React**: Functional components with hooks; avoid class components
 - **Testing**: Unit tests in `app/test/unit/`; use fixtures from `app/test/fixtures/`; mock IPC and external deps
 - **Webpack**: Separate configs for dev/prod; handles TypeScript, SCSS, assets
+- **Custom ESLint Rules**: Project-specific rules in `eslint-rules/` for security (e.g., IPC validation) and React patterns
 
 ## Code Examples
 ### IPC Usage
@@ -70,19 +85,32 @@ export async function selectRepository(
 }
 ```
 
+### Build Replacements
+```typescript
+// In app/app-info.ts
+export function getReplacements() {
+  return {
+    __OAUTH_CLIENT_ID__: JSON.stringify(process.env.DESKTOP_OAUTH_CLIENT_ID || devClientId),
+    __DARWIN__: process.platform === 'darwin',
+    // ... platform and build flags
+  }
+}
+```
+
 ## Dependencies & Integrations
 - **Electron**: Cross-platform desktop framework
 - **React**: UI rendering with custom hooks
 - **TypeScript**: Type safety throughout
 - **Webpack**: Bundling with hot reload
 - **SCSS**: Styling with custom variables
-- **Git Integration**: Direct libgit2 usage via custom bindings
+- **Git Integration**: Direct libgit2 usage via dugite bindings
 - **GitHub API**: REST/GraphQL for repository operations
 - **Keytar**: Secure credential storage
+- **Dexie**: IndexedDB wrapper for local data storage
 - **Desktop Notifications**: Native OS notifications
 
 ## Security Considerations
-- IPC channels validate sender trustworthiness
+- IPC channels validate sender trustworthiness (custom ESLint rules)
 - Certificate validation for HTTPS requests
 - Secure storage for tokens via keytar
 - Input sanitization for user-provided paths
